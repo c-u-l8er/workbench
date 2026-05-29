@@ -1,0 +1,2 @@
+name = "workbench"
+pages_build_output_dir = "app/build"
