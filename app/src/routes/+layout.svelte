@@ -2,6 +2,8 @@
   import { WORKBENCH_VERSION } from '$lib/version';
 </script>
 
+<amp-nav property="workbench"></amp-nav>
+
 <header>
   <nav>
     <a href="/" class="brand">Workbench</a>
@@ -30,6 +32,10 @@
     background: #0c0e12;
     color: #d8dee9;
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  /* Reserve space for the fixed portfolio <amp-nav> (var set by amp-nav.js). */
+  :global(body) {
+    padding-top: var(--amp-nav-height, 56px);
   }
   :global(a) { color: #88c0d0; text-decoration: none; }
   :global(a:hover) { text-decoration: underline; }
