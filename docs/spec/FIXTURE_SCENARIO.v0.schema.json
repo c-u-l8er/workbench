@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
+  "title": "Workbench Fixture Scenario v0.1",
+  "description": "Declarative scenario definition for the v0.1 Workbench test set. Each scenario makes the Workbench testable, not just interactive. Per spec §8.4.",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "purpose",
+    "body_choice",
+    "inputs",
+    "expected_outputs_shape",
+    "invariants_exercised",
+    "proof_gates_exercised",
+    "pass_criteria"
+  ],
+  "properties": {
+    "schema": { "const": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1" },
+    "id": {
+      "type": "string",
+      "pattern": "^skill\\.[a-z_]+$",
+      "description": "Stable fixture ID, must match filename"
+    },
+    "purpose":       { "type": "string", "minLength": 1 },
+    "body_choice":   { "enum": ["browser", "host", "simulator"] },
+    "task_prompt":   { "type": "string", "description": "Default seed task description shown to the user" },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name":     { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "type":     { "enum": ["string", "number", "boolean", "url", "json"] },
+          "example":  {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "expected_outputs_shape": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["string", "number", "boolean", "url", "json"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "invariants_exercised": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^inv\\." }
+    },
+    "proof_gates_exercised": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "gate.authority",
+          "gate.trace_completeness",
+          "gate.replay_fidelity",
+          "gate.redaction_verify",
+          "gate.content_hash",
+          "gate.no_hidden_capability"
+        ]
+      }
+    },
+    "pass_criteria": {
+      "type": "object",
+      "required": ["overall_verdict"],
+      "properties": {
+        "overall_verdict":  { "enum": ["pass", "partial", "fail", "inconclusive"] },
+        "fidelity_level":   { "enum": ["exact", "structural", "semantic", "failed", "inconclusive"] },
+        "must_emit_signal": { "type": "array", "items": { "type": "string" } },
+        "must_deny":        { "type": "array", "items": { "type": "string" } },
+        "must_redact":      { "type": "array", "items": { "type": "string" } },
+        "min_models":       { "type": "integer", "minimum": 1 },
+        "notes":            { "type": "string" }
+      }
+    },
+    "seeded_secrets": {
+      "type": "array",
+      "description": "ONLY for redaction-fixture scenarios. Fake strings injected so the secret detector has something to find. MUST be obviously synthetic.",
+      "items": { "type": "string" }
+    },
+    "capabilities_declared":  { "type": "array", "items": { "type": "string" } },
+    "capabilities_attempted": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,35 @@
+{
+  "schema": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
+  "id": "skill.redacted_export",
+  "purpose": "Demonstrate that the transcript_pii redaction profile strips synthetic secrets from the bundle export while the post-redaction content_hash still verifies and the schema still validates.",
+  "body_choice": "simulator",
+  "task_prompt": "User provides a 'note to self' input containing a synthetic API-key-shaped string. The skill echoes the note. On export, the redactor must detect the secret-shaped pattern and pre-select transcript_pii.",
+  "inputs": [
+    { "name": "note", "type": "string", "example": "Reminder: my key is sk-test-FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE" }
+  ],
+  "expected_outputs_shape": [
+    { "name": "echoed_note", "type": "string" }
+  ],
+  "invariants_exercised": [
+    "inv.every_action_authorized",
+    "inv.state_hash_per_edge",
+    "inv.bundle_hash_reproducible",
+    "inv.redacted_bundle_still_verifies"
+  ],
+  "proof_gates_exercised": [
+    "gate.authority",
+    "gate.trace_completeness",
+    "gate.redaction_verify",
+    "gate.content_hash"
+  ],
+  "pass_criteria": {
+    "overall_verdict": "pass",
+    "must_redact": ["sk-test-FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"],
+    "notes": "Redacted bundle must validate against the SkillBundle schema; redaction_result.post_redaction_hash_matches must be true; the synthetic secret string MUST NOT appear in the exported bundle bytes."
+  },
+  "seeded_secrets": [
+    "sk-test-FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"
+  ],
+  "capabilities_declared":  ["&body.browser", "ambient"],
+  "capabilities_attempted": ["&body.browser", "ambient"]
+}

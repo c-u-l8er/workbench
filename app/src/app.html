@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Workbench - Crystallize agent behavior into replayable skills" />
+    <!--
+      CSP per spec 7.5: no inline scripts, no eval, no service workers (v0.1).
+      adapter-static doesn't set headers; configure these at the Cloudflare Pages level via _headers.
+    -->
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>

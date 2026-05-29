@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/replay-report/v0.1",
+  "title": "ReplayReport v0.1",
+  "description": "Per spec §5.3. One per Replay execution. Nested inside SkillBundle in v0.1; standalone downloadable in v0.2 (OQ-5).",
+  "type": "object",
+  "required": [
+    "replay_id",
+    "skill_id",
+    "skill_version",
+    "input",
+    "started_at",
+    "ended_at",
+    "edges_attempted",
+    "edges_committed",
+    "status",
+    "surprise_signals",
+    "fidelity",
+    "fidelity_level",
+    "model_used",
+    "evidence_bundle_id"
+  ],
+  "properties": {
+    "replay_id":       { "type": "string", "format": "uuid" },
+    "skill_id":        { "type": "string", "format": "uuid" },
+    "skill_version":   { "type": "integer", "minimum": 1 },
+    "input":           { "type": "object" },
+    "started_at":      { "type": "string", "format": "date-time" },
+    "ended_at":        { "type": "string", "format": "date-time" },
+    "edges_attempted": { "type": "integer", "minimum": 0 },
+    "edges_committed": { "type": "integer", "minimum": 0 },
+    "status":          { "enum": ["success", "halted_at_edge_N", "completed_with_surprises"] },
+    "halted_at_edge":  { "type": ["integer", "null"], "minimum": 0 },
+    "surprise_signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["edge_index", "kind"],
+        "properties": {
+          "edge_index": { "type": "integer", "minimum": 0 },
+          "kind":       { "enum": ["state_hash_mismatch", "affordance_drift", "policy_deny", "model_refusal", "other"] },
+          "detail":     { "type": "string" },
+          "law": {
+            "type": "string",
+            "description": "Invariant Arithmetic law(s) this surprise's `consume` refusal cites (e.g. 'L12/L14').",
+            "pattern": "^L(1[0-5]|[1-9])(/L(1[0-5]|[1-9]))*$"
+          },
+          "invariant_family": {
+            "enum": ["topological", "spatial", "temporal", "governance"],
+            "description": "IA family the surprise projects onto. state_hash_mismatch → topological (κ drifted); affordance_drift → spatial (σ shifted); policy_deny/model_refusal → governance."
+          }
+        }
+      }
+    },
+    "fidelity":           { "type": "number", "minimum": 0, "maximum": 1 },
+    "fidelity_level":     { "enum": ["exact", "structural", "semantic", "failed", "inconclusive"] },
+    "model_used":         { "type": "string" },
+    "cost_usd":           { "type": ["number", "null"], "minimum": 0 },
+    "evidence_bundle_id": { "type": "string", "format": "uuid" }
+  },
+  "additionalProperties": false
+}

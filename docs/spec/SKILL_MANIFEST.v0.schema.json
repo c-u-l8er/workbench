@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/skill-manifest/v0.1",
+  "title": "SkillManifest v0.1",
+  "description": "User-editable record of a crystallized skill. First concrete consumer of STACK_PLANNING §4 Skill Portability Manifest (CL Find 1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "skill_id",
+    "name",
+    "slug",
+    "description",
+    "version",
+    "derived_from_trace_id",
+    "body_choice",
+    "inputs",
+    "outputs",
+    "preconditions",
+    "binding",
+    "capabilities_required",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema":                { "const": "https://opensentience.org/spec/skill-manifest/v0.1" },
+    "skill_id":              { "type": "string", "format": "uuid" },
+    "name":                  { "type": "string", "minLength": 1, "maxLength": 120 },
+    "slug":                  { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$", "maxLength": 80 },
+    "description":           { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "version":               { "type": "integer", "minimum": 1 },
+    "derived_from_trace_id": { "type": "string", "format": "uuid" },
+    "body_choice":           { "enum": ["browser", "host", "simulator"] },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name":        { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "type":        { "enum": ["string", "number", "boolean", "url", "json"] },
+          "required":    { "type": "boolean", "default": true },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "type": { "enum": ["string", "number", "boolean", "url", "json"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "preconditions":      { "type": "array", "items": { "type": "string" } },
+    "binding": {
+      "enum": ["model_version_bound", "model_family_bound", "portable", "substrate_only"]
+    },
+    "validated_against": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": ["model", "fidelity", "ts"],
+        "properties": {
+          "model":    { "type": "string" },
+          "fidelity": { "type": "number", "minimum": 0, "maximum": 1 },
+          "level":    { "enum": ["exact", "structural", "semantic", "failed", "inconclusive"] },
+          "ts":       { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "regression_probes":   { "type": "array", "default": [] },
+    "fallback_behavior":   {
+      "enum": ["halt_on_state_hash_mismatch", "continue_on_minor", "ask_user"],
+      "default": "halt_on_state_hash_mismatch"
+    },
+    "capabilities_required": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^(&[a-z]+\\.[a-z_]+|ambient)$"
+      }
+    },
+    "delegatic_policy_id": { "type": "string" },
+    "created_at":          { "type": "string", "format": "date-time" },
+    "updated_at":          { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

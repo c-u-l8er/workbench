@@ -1,0 +1,31 @@
+{
+  "schema": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
+  "id": "skill.model_comparison",
+  "purpose": "Same skill, two OpenRouter models, side-by-side ProofResults. Proves the external-validation path (GAP_REVIEW Gate F) and surfaces model-dependent fidelity divergence honestly.",
+  "body_choice": "simulator",
+  "task_prompt": "Reuse the skill.replay_fidelity bundle. Run replay twice, once per selected model. Surface both ProofResults and any divergence.",
+  "inputs": [
+    { "name": "initial_value", "type": "string", "example": "abc" },
+    { "name": "models", "type": "json", "example": ["anthropic/claude-haiku-4-5", "openai/gpt-4o-mini"] }
+  ],
+  "expected_outputs_shape": [
+    { "name": "results_by_model", "type": "json" }
+  ],
+  "invariants_exercised": [
+    "inv.every_action_authorized",
+    "inv.state_hash_per_edge"
+  ],
+  "proof_gates_exercised": [
+    "gate.replay_fidelity",
+    "gate.trace_completeness",
+    "gate.no_hidden_capability"
+  ],
+  "pass_criteria": {
+    "overall_verdict": "pass",
+    "fidelity_level": "structural",
+    "min_models": 2,
+    "notes": "Two complete ProofResults required. UI MUST display divergence (e.g., model A pass + model B partial) without flattening into a single composite verdict. If both pass at structural fidelity, the fixture passes."
+  },
+  "capabilities_declared":  ["&body.browser", "ambient"],
+  "capabilities_attempted": ["&body.browser", "ambient"]
+}

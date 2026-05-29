@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/teacher-charter/v0.1",
+  "title": "TeacherCharter v0.1",
+  "description": "Input artifact for a Workbench Supervisor run. Names one invariant from the Periodic Table of Agent Invariants, the manifestation space to teach across, the budget, and the rubric.",
+  "type": "object",
+  "required": [
+    "charter_id",
+    "spec_version",
+    "invariant_ref",
+    "manifestation_space",
+    "budget",
+    "rubric",
+    "model"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "charter_id":   { "type": "string", "minLength": 1 },
+    "spec_version": { "const": "0.1" },
+    "name":         { "type": "string" },
+    "description":  { "type": "string" },
+    "invariant_ref": {
+      "type": "object",
+      "required": ["table_uri", "invariant_id", "family"],
+      "additionalProperties": false,
+      "properties": {
+        "table_uri":    { "type": "string", "format": "uri" },
+        "invariant_id": { "type": "string", "minLength": 1 },
+        "family": {
+          "enum": [
+            "topological", "temporal", "governance", "spatial",
+            "deliberation", "attention", "evaluation", "security",
+            "embodiment", "federation", "economic"
+          ]
+        },
+        "formal_definition": { "type": "string" },
+        "proof_gate":        { "type": "string" }
+      }
+    },
+    "manifestation_space": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["dimension", "values"],
+        "additionalProperties": false,
+        "properties": {
+          "dimension": { "type": "string", "minLength": 1 },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["max_skills"],
+      "additionalProperties": false,
+      "properties": {
+        "max_skills":  { "type": "integer", "minimum": 1 },
+        "max_dollars": { "type": "number",  "minimum": 0 },
+        "max_seconds": { "type": "integer", "minimum": 1 },
+        "max_tokens":  { "type": "integer", "minimum": 1 }
+      }
+    },
+    "rubric": {
+      "type": "object",
+      "required": ["min_passing_gates"],
+      "additionalProperties": false,
+      "properties": {
+        "min_passing_gates":      { "type": "integer", "minimum": 1, "maximum": 6 },
+        "required_capabilities":  { "type": "array", "items": { "type": "string" } },
+        "forbidden_capabilities": { "type": "array", "items": { "type": "string" } },
+        "redaction_profile":      { "enum": ["none", "transcript_pii", "full"] },
+        "coverage_target":        { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "body":           { "enum": ["simulator", "browser", "host"] },
+    "model":          { "type": "string", "minLength": 1 },
+    "critic_model":   { "type": "string", "minLength": 1, "description": "v0.2: presence enables the devil's-advocate panel slot; defaults to `model`. The advocate runs in a separate context from the lead teacher regardless of model identity (anti-collusion, §4.5)." },
+    "delegatic":      { "type": "boolean", "default": true },
+    "fixture_seeds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "faculty": {
+      "type": "object",
+      "description": "v0.2: optional role assignment for the 3-agent panel (lead teacher / devil's advocate / goal generator). When omitted, all roles inherit `model`. Same model is acceptable for multiple roles; SEPARATE CONTEXTS are required regardless.",
+      "additionalProperties": false,
+      "properties": {
+        "lead":     { "type": "string", "minLength": 1, "description": "Lead teacher model. Defaults to charter.model." },
+        "advocate": { "type": "string", "minLength": 1, "description": "Devil's advocate model. Defaults to charter.critic_model or charter.model." },
+        "goal_gen": { "type": "string", "minLength": 1, "description": "Goal generator model. Defaults to charter.model." }
+      }
+    },
+    "mcp_targets": {
+      "type": "array",
+      "description": "v0.2: optional list of MCP servers this charter teaches skills FOR. When set, goal_gen receives the server's tool list (via tools/list discovery) and produced bundles MUST contain ≥1 tool_call edge against a listed server. v0.2 caps maxItems at 1; multi-server charters land in v0.3.",
+      "minItems": 0,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["server_id"],
+        "additionalProperties": false,
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable identifier — e.g. 'graphonomous', 'prism', 'delegatic', 'body-browser', 'body-os'."
+          },
+          "server_version": {
+            "type": "string",
+            "description": "Pinned version (e.g. '0.4'). When set, gate.tool_version_consistency enforces it across the bundle."
+          },
+          "server_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "description": "Optional sha256 of the canonical tools/list response. When set, alumni skills can be re-verified against the exact server contract that produced them. v0.2 optional; v0.3 required."
+          },
+          "tool_subset": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Optional whitelist of tool names. When omitted or empty, all discovered tools are allowed."
+          },
+          "discovery": {
+            "enum": ["tools/list", "explicit"],
+            "default": "tools/list",
+            "description": "'tools/list' = call MCP tools/list at charter-load. 'explicit' = use tool_subset only (skip discovery — for hermetic test charters)."
+          }
+        }
+      }
+    },
+    "school_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "v0.2: optional ID linking this charter to a long-lived School. When set, the Registrar (§8.4) appends this run's attempts to the school's CellLedger. When unset, the run is anonymous."
+    },
+    "rng_seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "v0.2: optional deterministic seed. When set, the stratified picker, the goal generator (OpenRouter `seed` param), and the devil's advocate are all derived from `hash(rng_seed || cell_key)`."
+    },
+    "manifestation_excludes": {
+      "type": "array",
+      "description": "v0.2: optional explicit exclusion list. Cells listed here are NOT enumerated by the picker and are surfaced separately in the CurriculumBundle as `intentionally_excluded`, keeping the report honest about not-covered vs frontier-remaining.",
+      "items": {
+        "type": "object",
+        "additionalProperties": { "type": "string" }
+      }
+    }
+  }
+}

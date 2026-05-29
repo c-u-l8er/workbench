@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/curriculum-bundle/v0.1",
+  "title": "CurriculumBundle v0.1",
+  "description": "Output artifact of a Workbench Supervisor run. Wraps every produced SkillBundle (by content_hash + manifestation cell) with per-skill invariant claims, coverage metrics (Wilson lower bound), and budget accounting. Hash-compatible with SkillBundle: canonicalize, exclude content_hash + signature, sha256.",
+  "type": "object",
+  "required": [
+    "curriculum_id",
+    "spec_version",
+    "charter_ref",
+    "charter",
+    "skill_bundles",
+    "invariant_claims",
+    "coverage",
+    "budget_consumed",
+    "sealed_at",
+    "content_hash"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "curriculum_id": { "type": "string", "minLength": 1 },
+    "spec_version":  { "const": "0.1" },
+    "charter_ref":   { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "charter":       { "$ref": "https://opensentience.org/spec/teacher-charter/v0.1" },
+    "skill_bundles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["content_hash", "manifestation"],
+        "additionalProperties": false,
+        "properties": {
+          "content_hash":  { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "manifestation": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "skill_slug": { "type": "string" },
+          "verdict":    { "enum": ["pass", "partial", "fail", "inconclusive"] }
+        }
+      }
+    },
+    "invariant_claims": {
+      "type": "array",
+      "description": "Per-skill, per-gate evidence. v0.2 expands this to record ALL gates run on each skill (not just the charter's named invariant gate). Each skill therefore contributes 6+ entries (6 v0.1 gates + any MCP gates that fired).",
+      "items": {
+        "type": "object",
+        "required": ["skill_content_hash", "invariant_id", "gate", "passed", "evidence_ref"],
+        "additionalProperties": false,
+        "properties": {
+          "skill_content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "invariant_id":       { "type": "string", "minLength": 1 },
+          "gate":               { "type": "string", "minLength": 1, "description": "v0.2 vocabulary: gate.content_hash | gate.trace_completeness | gate.no_hidden_capability | gate.authority | gate.redaction_verify | gate.replay_fidelity | gate.tool_contract_compliance | gate.tool_idempotence | gate.tool_version_consistency" },
+          "passed":             { "type": "boolean" },
+          "evidence_ref":       { "type": "string", "description": "JSON pointer into the referenced SkillBundle's proof.gates[]. Pointer only — no inlined payload (keeps the curriculum citable + small)." },
+          "critic_dissent":     { "type": "boolean", "description": "v0.1 + v0.2: true iff the devil's advocate dissented on this skill+gate. Advisory only — does NOT flip `passed`." },
+          "counter_example": {
+            "type": "object",
+            "description": "v0.2: optional. When the advocate dissented, this is the counter-example it produced (args/cell coordinates that would have exposed the cheap-pass). Drives future gate revisions.",
+            "additionalProperties": true
+          },
+          "panel_verdict": {
+            "type": "object",
+            "description": "v0.2: optional structured record of the 3-agent panel's verdicts for this skill+gate.",
+            "additionalProperties": false,
+            "properties": {
+              "lead":     { "enum": ["produced", "errored"], "description": "Lead teacher status (produced the skill / errored mid-teach)." },
+              "advocate": { "enum": ["consent", "dissent", "skipped"], "description": "Devil's advocate verdict. 'skipped' when advocate slot was unstaffed for this skill." },
+              "examiner": { "enum": ["pass", "fail", "inconclusive"], "description": "Authoritative — mirrors `passed` (true iff 'pass')." }
+            }
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["cells_total", "cells_visited", "cells_covered", "wilson_lower_bound", "frontier_remaining"],
+      "additionalProperties": false,
+      "properties": {
+        "cells_total":        { "type": "integer", "minimum": 1, "description": "Cardinality of charter.manifestation_space minus intentionally_excluded." },
+        "cells_visited":      { "type": "integer", "minimum": 0 },
+        "cells_covered":      { "type": "integer", "minimum": 0, "description": "Distinct cells (dedup'd by canonical key) with ≥1 examiner-pass for the charter's invariant. NOT a count of passing skills." },
+        "wilson_lower_bound": { "type": "number",  "minimum": 0, "maximum": 1, "description": "95% Wilson lower bound on cells_covered / cells_total. Hand-verifiable from JSON alone." },
+        "frontier_remaining": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "intentionally_excluded": {
+          "type": "array",
+          "description": "v0.2: cells the charter explicitly excluded via `manifestation_excludes`. Surfaced separately to keep the report honest about not-covered vs frontier-remaining.",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      }
+    },
+    "mcp_targets_resolved": {
+      "type": "array",
+      "description": "v0.2: when charter.mcp_targets[] was set, this records the RESOLVED state at run-time — server_version actually discovered + server_fingerprint computed from tools/list. Re-verifiers compare this against the live server to detect drift.",
+      "items": {
+        "type": "object",
+        "required": ["server_id", "server_version", "server_fingerprint"],
+        "additionalProperties": false,
+        "properties": {
+          "server_id":         { "type": "string", "minLength": 1 },
+          "server_version":    { "type": "string", "minLength": 1 },
+          "server_fingerprint":{ "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "tools_observed":    { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "panel_summary": {
+      "type": "object",
+      "description": "v0.2: aggregate of panel verdicts across all skills. Useful for at-a-glance health on the /supervise inspector.",
+      "additionalProperties": false,
+      "properties": {
+        "skills_total":            { "type": "integer", "minimum": 0 },
+        "examiner_pass":           { "type": "integer", "minimum": 0 },
+        "advocate_consent":        { "type": "integer", "minimum": 0 },
+        "advocate_dissent":        { "type": "integer", "minimum": 0, "description": "Number of skills where the advocate dissented despite examiner pass. High dissent ⇒ gate may be too weak." },
+        "advocate_dissent_examples": {
+          "type": "array",
+          "description": "v0.2: up to 5 counter-examples surfaced for human review.",
+          "items": { "type": "object", "additionalProperties": true },
+          "maxItems": 5
+        }
+      }
+    },
+    "budget_consumed": {
+      "type": "object",
+      "required": ["skills_produced", "wallclock_seconds"],
+      "additionalProperties": false,
+      "properties": {
+        "skills_produced":   { "type": "integer", "minimum": 0 },
+        "wallclock_seconds": { "type": "integer", "minimum": 0 },
+        "dollars_spent":     { "type": "number",  "minimum": 0 },
+        "tokens_consumed":   { "type": "integer", "minimum": 0 },
+        "halt_reason": {
+          "enum": [
+            "max_skills_reached",
+            "max_dollars_reached",
+            "max_seconds_reached",
+            "coverage_target_reached",
+            "frontier_empty",
+            "consecutive_failures",
+            "user_aborted"
+          ]
+        }
+      }
+    },
+    "prism_scores": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "sealed_at":          { "type": "string", "format": "date-time" },
+    "supervisor_version": { "type": "string" },
+    "workbench_version":  { "type": "string" },
+    "content_hash":       { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "signature":          { "type": ["string", "null"] }
+  }
+}

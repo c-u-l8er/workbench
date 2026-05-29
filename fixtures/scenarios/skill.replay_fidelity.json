@@ -1,0 +1,32 @@
+{
+  "schema": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
+  "id": "skill.replay_fidelity",
+  "purpose": "Replay an exported bundle against the same input and prove structural fidelity. Exercises the OS-011 5.4 fail-fast path on a happy run (no mismatch).",
+  "body_choice": "simulator",
+  "task_prompt": "Walk a deterministic 3-step task in the simulator: read tile A, write to tile B, read tile B back. Output should be the final value at tile B.",
+  "inputs": [
+    { "name": "initial_value", "type": "string", "example": "abc" }
+  ],
+  "expected_outputs_shape": [
+    { "name": "final_value", "type": "string" }
+  ],
+  "invariants_exercised": [
+    "inv.every_action_authorized",
+    "inv.state_hash_per_edge",
+    "inv.bundle_hash_reproducible"
+  ],
+  "proof_gates_exercised": [
+    "gate.authority",
+    "gate.trace_completeness",
+    "gate.replay_fidelity",
+    "gate.content_hash",
+    "gate.no_hidden_capability"
+  ],
+  "pass_criteria": {
+    "overall_verdict": "pass",
+    "fidelity_level": "structural",
+    "notes": "Re-import bundle into a fresh session and replay. Edges committed must equal edges attempted; no SurpriseSignals expected."
+  },
+  "capabilities_declared":  ["&body.browser", "ambient"],
+  "capabilities_attempted": ["&body.browser", "ambient"]
+}

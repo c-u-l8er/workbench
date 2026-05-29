@@ -1,0 +1,30 @@
+{
+  "schema": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
+  "id": "skill.basic_prompt_to_manifest",
+  "purpose": "Smallest possible end-to-end loop: one perception, one LLM call, one action, one crystallization. Proves Demonstrate -> Crystallize without exercising any optional substrate.",
+  "body_choice": "simulator",
+  "task_prompt": "Greet the user by name. The simulator presents a name; respond with 'Hello, <name>!' as the action.",
+  "inputs": [
+    { "name": "user_name", "type": "string", "example": "Travis" }
+  ],
+  "expected_outputs_shape": [
+    { "name": "greeting", "type": "string" }
+  ],
+  "invariants_exercised": [
+    "inv.every_action_authorized",
+    "inv.state_hash_per_edge",
+    "inv.bundle_hash_reproducible"
+  ],
+  "proof_gates_exercised": [
+    "gate.authority",
+    "gate.trace_completeness",
+    "gate.content_hash",
+    "gate.no_hidden_capability"
+  ],
+  "pass_criteria": {
+    "overall_verdict": "pass",
+    "notes": "Crystallizer must produce a SkillManifest with non-empty name and description and at least one edge in the source trace."
+  },
+  "capabilities_declared":  ["&body.browser", "ambient"],
+  "capabilities_attempted": ["&body.browser", "ambient"]
+}

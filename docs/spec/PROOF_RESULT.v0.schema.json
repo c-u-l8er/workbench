@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/proof-result/v0.1",
+  "title": "ProofResult v0.1",
+  "description": "First-class verdict on a SkillBundle. Answers 'did this bundle prove what it claimed?' in O(1) without re-deriving from event traces. Per spec §5.4.",
+  "type": "object",
+  "required": [
+    "schema",
+    "verifier_version",
+    "computed_at",
+    "overall_verdict",
+    "proof_gates",
+    "invariant_results",
+    "authority_result",
+    "redaction_result",
+    "replay_result",
+    "conformance_check"
+  ],
+  "properties": {
+    "schema":           { "const": "https://opensentience.org/spec/proof-result/v0.1" },
+    "verifier_version": { "type": "string" },
+    "computed_at":      { "type": "string", "format": "date-time" },
+    "overall_verdict":  { "enum": ["pass", "partial", "fail", "inconclusive"] },
+    "proof_gates": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["id", "verdict"],
+        "properties": {
+          "id": {
+            "enum": [
+              "gate.authority",
+              "gate.trace_completeness",
+              "gate.replay_fidelity",
+              "gate.redaction_verify",
+              "gate.content_hash",
+              "gate.no_hidden_capability"
+            ]
+          },
+          "verdict":      { "enum": ["pass", "fail", "partial", "inconclusive", "n/a"] },
+          "evidence_ref": { "type": "string" },
+          "level":        { "enum": ["exact", "structural", "semantic", "failed", "inconclusive"] },
+          "reason":       { "type": "string" },
+          "law": {
+            "type": "string",
+            "description": "Invariant Arithmetic law(s) this gate operationalizes. Each gate's verdict is derived from an `IA.consume(value, requirements)` call; the law field names which law(s) the call exercises (e.g. 'L11/L14').",
+            "pattern": "^L(1[0-5]|[1-9])(/L(1[0-5]|[1-9]))*$"
+          },
+          "invariant_family": {
+            "enum": ["topological", "spatial", "temporal", "governance"],
+            "description": "IA family the gate's value projects onto. See STACK_PROOF.html §I and AmpersandBoxDesign/reference/elixir/invariant_arithmetic."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ia_substrate": {
+      "type": "object",
+      "description": "Optional declaration that this ProofResult's gates are computed by Invariant Arithmetic. When present, every gate SHOULD carry a `law` and `invariant_family` field.",
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Invariant Arithmetic spec version (e.g. '0.3')."
+        },
+        "laws_exercised": {
+          "type": "array",
+          "description": "Subset of L1..L15 this verifier covers.",
+          "items": { "type": "string", "pattern": "^L(1[0-5]|[1-9])$" }
+        },
+        "families_exercised": {
+          "type": "array",
+          "items": { "enum": ["topological", "spatial", "temporal", "governance"] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "invariant_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "held"],
+        "properties": {
+          "id":        { "type": "string", "pattern": "^inv\\." },
+          "held":      { "oneOf": [{ "type": "boolean" }, { "const": "n/a" }] },
+          "checked_n": { "type": "integer", "minimum": 0 },
+          "detail":    { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "authority_result": {
+      "type": "object",
+      "required": ["decision"],
+      "properties": {
+        "decision":  { "enum": ["allow", "deny", "partial"] },
+        "policy_id": { "type": "string" },
+        "denials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["capability", "reason"],
+            "properties": {
+              "capability": { "type": "string" },
+              "reason":     { "type": "string" },
+              "edge_index": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "redaction_result": {
+      "type": "object",
+      "required": ["profile"],
+      "properties": {
+        "profile":                      { "enum": ["none", "transcript_pii", "full"] },
+        "fields_stripped":              { "type": "array", "items": { "type": "string" } },
+        "post_redaction_hash_matches":  { "type": "boolean" }
+      }
+    },
+    "replay_result": {
+      "type": "object",
+      "required": ["status", "fidelity_level"],
+      "properties": {
+        "status":           { "enum": ["success", "halted", "completed_with_surprises", "not_run"] },
+        "fidelity_level":   { "enum": ["exact", "structural", "semantic", "failed", "inconclusive"] },
+        "edges_attempted":  { "type": "integer", "minimum": 0 },
+        "edges_committed":  { "type": "integer", "minimum": 0 },
+        "halted_at_edge":   { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "conformance_check": {
+      "type": "object",
+      "required": ["spec_version"],
+      "properties": {
+        "spec_version":     { "type": "string" },
+        "fixtures_passed":  { "type": "array", "items": { "type": "string" } },
+        "fixtures_failed":  { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "additionalProperties": false
+}

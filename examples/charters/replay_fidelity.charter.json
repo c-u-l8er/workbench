@@ -1,0 +1,29 @@
+{
+  "charter_id": "charter-replay-fidelity-2026-05-25",
+  "spec_version": "0.1",
+  "name": "Replay determinism across bodies and redaction",
+  "description": "Worked example from workbench/docs/spec/SUPERVISOR.md §2.3. Manifestation space is 2 × 3 × 3 × 2 = 36 cells; budget caps the run at 12 skills, so coverage will be partial. Frontier is reported for the remaining 24+ cells.",
+  "invariant_ref": {
+    "table_uri": "https://opensentience.org/spec/periodic-table-of-agent-invariants.html#replay-determinism",
+    "invariant_id": "replay_determinism",
+    "family": "embodiment",
+    "formal_definition": "For every edge e_i in a sealed trace with observation o_i and state_hash s_i, re-executing the trace through the recorded-observation executor produces an observation whose canonical hash equals s_i, OR the gate downgrades to 'structural' fidelity iff s_i is absent (e.g. after redaction).",
+    "proof_gate": "gate.replay_fidelity"
+  },
+  "manifestation_space": [
+    { "dimension": "body",             "values": ["simulator", "browser"] },
+    { "dimension": "turn_count",       "values": ["single", "short", "long"] },
+    { "dimension": "redaction_profile","values": ["none", "transcript_pii", "full"] },
+    { "dimension": "state_mutation",   "values": ["pure", "side_effecting"] }
+  ],
+  "budget": { "max_skills": 12, "max_dollars": 1.5, "max_seconds": 900 },
+  "rubric": {
+    "min_passing_gates": 6,
+    "required_capabilities": ["&model.text"],
+    "forbidden_capabilities": ["&body.os"],
+    "coverage_target": 0.7
+  },
+  "body": "simulator",
+  "model": "anthropic/claude-haiku-4-5",
+  "delegatic": true
+}

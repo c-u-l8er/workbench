@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/evidence-bundle/v0.1",
+  "title": "EvidenceBundle v0.1",
+  "description": "PRISM-facing view of the same data SkillBundle wraps for users. Same JSON, different framing. Per spec §6.",
+  "type": "object",
+  "required": [
+    "scenario",
+    "system",
+    "capability_snapshot",
+    "pulse_manifest_snapshot",
+    "trace",
+    "events",
+    "transcript",
+    "tool_calls",
+    "graphonomous_refs",
+    "authorization",
+    "redaction_profile",
+    "reproducibility"
+  ],
+  "properties": {
+    "scenario": {
+      "type": "object",
+      "required": ["scenario_id", "manifest"],
+      "properties": {
+        "scenario_id": { "type": "string" },
+        "source":      { "type": "string" },
+        "manifest":    { "type": "object" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "required": ["system_id", "model", "provider"],
+      "properties": {
+        "system_id": { "type": "string" },
+        "model":     { "type": "string" },
+        "provider":  { "type": "string", "const": "openrouter" },
+        "byo_key":   { "type": "boolean", "const": true }
+      }
+    },
+    "capability_snapshot": {
+      "type": "object",
+      "required": ["ampersand_version", "primitives", "subtypes"],
+      "properties": {
+        "ampersand_version": { "type": "string" },
+        "primitives":        { "type": "array", "items": { "type": "string" } },
+        "subtypes":          { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "pulse_manifest_snapshot": { "type": "object" },
+
+    "trace": {
+      "type": "object",
+      "required": ["trace_id", "spans"],
+      "properties": {
+        "trace_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+        "spans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["span_id", "name", "start_unix_nano", "end_unix_nano"],
+            "properties": {
+              "span_id":         { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+              "parent_span_id":  { "type": ["string", "null"] },
+              "name":            { "type": "string" },
+              "start_unix_nano": { "type": "integer", "minimum": 0 },
+              "end_unix_nano":   { "type": "integer", "minimum": 0 },
+              "attributes":      { "type": "object" },
+              "phase":           { "enum": ["retrieve", "route", "act", "learn", "consolidate"] }
+            }
+          }
+        }
+      }
+    },
+
+    "events": {
+      "type": "array",
+      "description": "CloudEvents v1 envelopes — PULSE tokens",
+      "items": {
+        "type": "object",
+        "required": ["specversion", "id", "source", "type", "time", "data"],
+        "properties": {
+          "specversion": { "const": "1.0" },
+          "id":          { "type": "string" },
+          "source":      { "type": "string" },
+          "type":        { "type": "string" },
+          "time":        { "type": "string", "format": "date-time" },
+          "trace_id":    { "type": "string" },
+          "span_id":     { "type": "string" },
+          "data":        {}
+        }
+      }
+    },
+
+    "transcript": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn", "role"],
+        "properties": {
+          "turn":     { "type": "integer", "minimum": 0 },
+          "role":     { "enum": ["system", "user", "assistant", "tool"] },
+          "content":  { "type": ["string", "null"] },
+          "redacted": { "type": "boolean", "default": false }
+        }
+      }
+    },
+
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["span_id", "server", "tool", "request_hash", "response_hash"],
+        "properties": {
+          "span_id":       { "type": "string" },
+          "server":        { "enum": ["graphonomous", "prism", "pulse", "delegatic", "body-browser", "body-os"] },
+          "tool":          { "type": "string" },
+          "request_hash":  { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "response_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+
+    "graphonomous_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["uri", "op"],
+        "properties": {
+          "uri": { "type": "string", "pattern": "^graphonomous://" },
+          "op":  { "enum": ["read", "create", "update", "supersede", "forget"] }
+        }
+      }
+    },
+
+    "authorization": {
+      "type": "object",
+      "properties": {
+        "policy_id":            { "type": "string" },
+        "approved_by":          { "type": "string" },
+        "expires_at":           { "type": "string", "format": "date-time" },
+        "hmac":                 { "type": "string" },
+        "principal_id":         { "type": ["string", "null"] },
+        "capability_grant_ref": { "type": ["string", "null"] }
+      }
+    },
+
+    "judge": {
+      "type": ["object", "null"],
+      "properties": {
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "meta_judge": { "type": ["object", "null"] },
+        "rationale":  { "type": ["string", "null"] }
+      }
+    },
+
+    "score": {
+      "type": ["object", "null"],
+      "properties": {
+        "composite":  { "type": "number" },
+        "derivation": { "type": "string" }
+      }
+    },
+
+    "evidence_refs": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": ["target", "selector"],
+        "properties": {
+          "target":     { "type": "string", "format": "uri" },
+          "selector":   { "type": "object" },
+          "motivation": { "type": "string" }
+        }
+      }
+    },
+
+    "redaction_profile": {
+      "enum": ["none", "transcript_pii", "full"],
+      "default": "none"
+    },
+
+    "reproducibility": {
+      "type": "object",
+      "required": ["workbench_version"],
+      "properties": {
+        "fly_revisions": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "supabase_migration_count":   { "type": "integer", "minimum": 0 },
+        "ampersand_protocol_version": { "type": "string" },
+        "pulse_version":              { "type": "string" },
+        "prism_version":              { "type": "string" },
+        "workbench_version":          { "type": "string" }
+      }
+    },
+
+    "invariants": {
+      "type": "object",
+      "description": "Optional Invariant Arithmetic substrate declaration. When present, this bundle's verifier emits per-gate `law` + `invariant_family` annotations against the IA spec at the given version. See STACK_PROOF.html and AmpersandBoxDesign/reference/elixir/invariant_arithmetic.",
+      "required": ["substrate", "version"],
+      "properties": {
+        "substrate": { "const": "invariant_arithmetic" },
+        "version":   { "type": "string", "description": "IA spec version, e.g. '0.3'." },
+        "laws_exercised": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^L(1[0-5]|[1-9])$" }
+        },
+        "families_exercised": {
+          "type": "array",
+          "items": { "enum": ["topological", "spatial", "temporal", "governance"] }
+        },
+        "reference_impl": {
+          "type": "string",
+          "description": "Pointer to a reference implementation, e.g. 'AmpersandBoxDesign/reference/elixir/invariant_arithmetic@0.1.0' or 'workbench/app/src/lib/ia@0.1.0'."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

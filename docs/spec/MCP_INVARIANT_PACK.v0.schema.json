@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensentience.org/spec/mcp-invariant-pack/v0.1",
+  "title": "MCPInvariantPack v0.1",
+  "description": "Per-MCP-server invariant catalogue. Each MCP server in the [&] stack MAY ship one of these files (canonically at `<server>/spec/mcp-invariants.v0.json` in its own repo) declaring (a) the server's stable identity + version + content fingerprint, (b) the invariants it claims to satisfy, (c) which tools each invariant applies to, (d) per-tool idempotence declarations, and (e) sample charters that exercise each invariant. The Workbench Supervisor auto-discovers installed packs at charter-load and offers them as one-click charter templates. See SUPERVISOR.md §5.5.",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "server_id",
+    "server_version",
+    "tools",
+    "invariants"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "const": "0.1" },
+
+    "server_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier — e.g. 'graphonomous', 'prism', 'delegatic', 'body-browser', 'body-os'. SHOULD match the directory name of the server in the [&] stack."
+    },
+    "server_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Server version this pack was authored against (e.g. '0.4')."
+    },
+    "server_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Optional sha256 of the canonical tools/list response when run against this server at this version. When set, the Supervisor verifies the live server's fingerprint matches before accepting a charter that references this pack. Required in v0.3."
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional human-readable docs URL."
+    },
+
+    "tools": {
+      "type": "array",
+      "description": "Per-tool metadata the Supervisor needs beyond what MCP tools/list already returns. The Workbench prefers live tools/list discovery for the canonical inputSchema/outputSchema; this array's `inputSchema`/`outputSchema` fields are OPTIONAL fallbacks for hermetic test environments where live discovery is disabled.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "idempotent": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, gate.tool_idempotence enforces that two tool_call edges with identical args_hash MUST produce identical result_hash. Default false (no enforcement)."
+          },
+          "side_effecting": {
+            "type": "boolean",
+            "default": true,
+            "description": "Documentation hint. When false, gate.no_hidden_capability MAY downgrade undeclared-capability findings on this tool from fail to partial."
+          },
+          "inputSchema":  { "type": "object", "description": "Optional fallback JSON Schema for input args. Live tools/list takes precedence when available." },
+          "outputSchema": { "type": "object", "description": "Optional fallback JSON Schema for result. Live tools/list takes precedence when available." },
+          "description":  { "type": "string" }
+        }
+      }
+    },
+
+    "invariants": {
+      "type": "array",
+      "description": "The invariants this server claims to satisfy. Each entry is consumable as a TeacherCharter.invariant_ref. The Supervisor lists these on /supervise as one-click charter templates.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["invariant_id", "family", "proof_gate", "applies_to_tools"],
+        "additionalProperties": false,
+        "properties": {
+          "invariant_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable per-server invariant identifier — e.g. 'kappa_routing_correctness', 'consolidate_idempotence'."
+          },
+          "family": {
+            "enum": [
+              "topological", "temporal", "governance", "spatial",
+              "deliberation", "attention", "evaluation", "security",
+              "embodiment", "federation", "economic"
+            ]
+          },
+          "formal_definition": {
+            "type": "string",
+            "description": "Prose + symbol definition. This text is fed into the goal generator (which writes the teach task) but NOT into the examiner (which is a deterministic gate). Goal generator MUST NOT see the gate's executable predicate; this string is the only invariant info it gets."
+          },
+          "proof_gate": {
+            "type": "string",
+            "description": "Workbench gate id — e.g. 'gate.tool_contract_compliance', 'gate.tool_idempotence', or one of the v0.1 stack-general gates.",
+            "minLength": 1
+          },
+          "applies_to_tools": {
+            "type": "array",
+            "description": "Names of tools (from `tools[]`) this invariant applies to. The Supervisor uses this to bias the goal generator toward invoking these tools.",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "suggested_manifestation_space": {
+            "type": "array",
+            "description": "Optional default manifestation_space for charters targeting this invariant. The user can edit before running.",
+            "items": {
+              "type": "object",
+              "required": ["dimension", "values"],
+              "additionalProperties": false,
+              "properties": {
+                "dimension": { "type": "string", "minLength": 1 },
+                "values":    { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              }
+            }
+          },
+          "sample_charter_uri": {
+            "type": "string",
+            "description": "Relative path or URI to a pre-authored TeacherCharter JSON exercising this invariant. The /supervise UI links to it as 'load template'."
+          }
+        }
+      }
+    },
+
+    "registrar_hints": {
+      "type": "object",
+      "description": "v0.2 optional hints the Registrar can use when this server's invariants are taught across multiple curricula.",
+      "additionalProperties": false,
+      "properties": {
+        "stale_after_version_bump": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true (default), alumni skills from this server are marked stale when server_version bumps; AlumniLedger flags them for re-verification."
+        },
+        "preferred_advocate_model": {
+          "type": "string",
+          "description": "Optional model hint for the devil's advocate when attacking this server. Server authors who know which models are best at finding cheap-passes against their tools can recommend one."
+        }
+      }
+    }
+  }
+}
