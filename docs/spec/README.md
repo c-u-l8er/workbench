@@ -2,6 +2,8 @@
 
 **A skill workshop and proof harness for the [&] Stack.**
 
+> **Part of the [&] Protocol stack** · [Ecosystem overview](../../../ECOSYSTEM.md) · [Three-protocol stack](../../../PULSE/docs/THREE_PROTOCOL_STACK.md) · [Stack status](../../../STACK_COMPLETION.md)
+
 **Spec version:** v0.1 draft
 **Status:** spec (not yet `in_tree` per STACK_PLANNING §1.1 / Finding 2 status vocabulary)
 **Spec date:** 2026-05-25
@@ -16,6 +18,10 @@
 - `opensentience.org/docs/spec/README.md` — OS-001..OS-011 index
 - `PRISM/docs/spec/README.md` — OS-009 PRISM eval engine
 - `PULSE/schemas/pulse-loop-manifest.v0.1.json` — PULSE manifest schema (v0.1.1)
+
+**Workbench spec companions (in this directory):**
+- [Supervisor spec](SUPERVISOR.md) — the workbench supervisor surface and its responsibilities
+- [Supervisor build prompt](SUPERVISOR_BUILD_PROMPT.md) — implementation build prompt for the supervisor
 
 ---
 
