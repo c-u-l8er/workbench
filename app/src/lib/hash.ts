@@ -13,14 +13,18 @@ export function canonicalize(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (Array.isArray(value)) return '[' + value.map(canonicalize).join(',') + ']';
   if (typeof value === 'object') {
-    const keys = Object.keys(value as Record<string, unknown>).sort();
-    return (
-      '{' +
-      keys
-        .map((k) => JSON.stringify(k) + ':' + canonicalize((value as Record<string, unknown>)[k]))
-        .join(',') +
-      '}'
-    );
+    // Keys whose value is `undefined` are omitted, matching JSON.stringify.
+    // An optional field set explicitly to undefined and one never set are the
+    // same object once serialized, so they must hash the same. Without this,
+    // `appendEdge(trace, { kind: 'act' })` — a legal edge with no observation —
+    // produces `{ state_hash: undefined }` and content-hashing the bundle
+    // throws. This widens the accepted domain only: any value that hashed
+    // before hashes identically, because such keys used to throw.
+    const rec = value as Record<string, unknown>;
+    const keys = Object.keys(rec)
+      .filter((k) => rec[k] !== undefined)
+      .sort();
+    return '{' + keys.map((k) => JSON.stringify(k) + ':' + canonicalize(rec[k])).join(',') + '}';
   }
   throw new Error('Unsupported value type: ' + typeof value);
 }

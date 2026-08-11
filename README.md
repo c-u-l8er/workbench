@@ -24,10 +24,12 @@ workbench/
 │   │   ├── hash.ts              # canonical JSON + sha256 + bundleContentHash
 │   │   ├── storage.ts           # IndexedDB + sessionStorage
 │   │   ├── openrouter.ts        # BYO-key chat client (via /api/llm/openrouter)
-│   │   ├── trace.ts             # InteractionTrace builder
+│   │   ├── trace.ts             # InteractionTrace builder + stateHash
+│   │   ├── ingest/              # Claude Code transcript → trace / manifest / bundle (pure)
 │   │   ├── mcp/                 # streamable-HTTP MCP client + per-server wrappers
 │   │   └── bundle/              # builder / verify / replay
-│   └── src/routes/              # +layout, +page (landing), teach, skills, compare, prism, import
+│   ├── src/routes/              # +layout, +page (landing), record, teach, skills, compare, prism, import
+│   └── tools/                   # ingest-transcript.ts — the only reader of a real transcript
 └── functions/
     ├── llm/openrouter.ts        # CF Pages Function: OpenRouter pass-through
     ├── mcp/                     # CF Pages Functions: delegatic / body-browser / prism MCP proxies
@@ -35,6 +37,26 @@ workbench/
 ```
 
 ## Status
+
+**v0.4.0-alpha — Record.** Workbench no longer needs you to drive an agent
+through a browser textarea to produce a bundle. Drop a Claude Code session
+transcript (`~/.claude/projects/<project>/<session-id>.jsonl`) on `/record` and
+it becomes a scored SkillBundle: streamed and indexed in the tab, segmented at
+each user turn, verified against the same six gates, and saved to the same
+library. No model call, no API key, nothing uploaded.
+
+The parser (`app/src/lib/ingest/`) is pure and browser-safe; the CLI at
+`app/tools/ingest-transcript.ts` is the only thing that reads a transcript off
+disk. Findings, defects fixed, and measured numbers are in
+[`docs/INGEST_SPIKE.md`](docs/INGEST_SPIKE.md) — including three bugs the real
+transcripts surfaced that the fixtures never did (a `canonicalize` crash on
+undefined-valued keys, and two live secret-leak paths in the redaction
+profiles).
+
+Also in v0.4: `checkPhaseOrder` now closes a cycle when feedback arrives. It
+previously read every tool call in a loop as a `learn → act` violation — 124 of
+them on a 124-tool-call segment — which measured its own segmentation rather
+than the trace.
 
 **v0.3.0-alpha** — Invariant Arithmetic v0.3 is wired into the verifier and
 replay surface. Every proof gate's verdict is now computed by an
@@ -55,11 +77,12 @@ projected from the gates' annotations) which the teach flow stamps into
 `bundle.proof.ia_substrate` before re-sealing the `content_hash`. The
 compare flow leaves it ephemeral (no persistence).
 
-113 / 113 vitest tests pass as of 2026-05-27 (95 v0.2 + 15 IA law properties
-at 1000 trials each + 3 IA annotation/substrate tests). `npm run check` has 23 known
-TypeScript/Svelte diagnostics inherited from v0.2.3 (no new diagnostics from
-the IA work); do not present the app as typecheck-clean until those are
-resolved.
+152 / 152 vitest tests pass as of 2026-08-11 (132 through v0.3 + 18 ingest +
+2 rewritten phase-order tests). `npm run check` reports 27 TypeScript/Svelte
+diagnostics; 26 predate v0.4 and the one added is the same "no declaration
+file for `uuid`" error that `trace.ts`, `builder.ts`, `replay.ts` and
+`charter.ts` already carry — `@types/uuid` would clear five at once. Do not
+present the app as typecheck-clean until those are resolved.
 
 | Surface             | Status              |
 |---------------------|---------------------|
@@ -79,6 +102,8 @@ resolved.
 | Delegatic authority      | ✅ v0.2.1 (put_policy → authorize → verify) |
 | PRISM connectivity       | ✅ v0.2.3 (leaderboard + list_systems + bundle hand-off) |
 | Invariant Arithmetic     | ✅ v0.3.0 (15 laws, 1000-trial property tests, `consume`-derived gates) |
+| Record (transcript ingest) | ✅ v0.4.0 (streamed, segmented, 6/6 gates, redacted-on-save) |
+| Phase-order check        | ✅ v0.4.0 (cycles close at feedback; authorize-after-act still caught) |
 
 ## Develop
 

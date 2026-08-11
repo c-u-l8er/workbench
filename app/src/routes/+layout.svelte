@@ -7,6 +7,7 @@
 <header>
   <nav>
     <a href="/" class="brand">Workbench</a>
+    <a href="/record">Record</a>
     <a href="/teach">Teach</a>
     <a href="/skills">Skills</a>
     <a href="/compare">Compare</a>

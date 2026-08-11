@@ -60,18 +60,90 @@ function redactEdges(
       const { observation: _o, state_hash: _s, ...skeleton } = e;
       void _o;
       void _s;
+      // Tool arguments are dropped too. `full` is the profile for publishing a
+      // bundle to a third party, and on an ingested transcript the arguments
+      // ARE the payload: the shell command, the file content being written,
+      // the URL being fetched. Keeping `server` + `name` preserves the
+      // structural skeleton replay needs without shipping what was done.
+      if (skeleton.tool_call && typeof skeleton.tool_call === 'object') {
+        skeleton.tool_call = {
+          ...(skeleton.tool_call as Record<string, unknown>),
+          arguments: {}
+        };
+      }
       return skeleton;
     }
-    // transcript_pii: walk observation tree. If the observation was actually
-    // modified, the original state_hash no longer matches its content — strip
-    // it so the recipient does not get a false replay_fidelity failure.
-    if (e.observation === undefined) return e;
-    const next = walk(e.observation, profile);
-    if (JSON.stringify(next) === JSON.stringify(e.observation)) return e;
-    const { state_hash: _s, ...rest } = e;
-    void _s;
-    return { ...rest, observation: next };
+
+    // transcript_pii: walk BOTH the observation tree and the tool_call.
+    //
+    // Walking only the observation was a leak: a secret passed as a tool
+    // argument (`export TOKEN=…` in a Bash command, an API key written into a
+    // config file, a bearer token in a fetch URL) survived redaction intact.
+    // On a browser-teach trace arguments were fixture-authored and this rarely
+    // bit; on an ingested Claude Code transcript the arguments are the single
+    // most likely place for a real secret to appear.
+    let out = e;
+
+    if (out.tool_call !== undefined) {
+      const nextCall = walk(out.tool_call, profile);
+      if (JSON.stringify(nextCall) !== JSON.stringify(out.tool_call)) {
+        out = { ...out, tool_call: nextCall };
+      }
+    }
+
+    // If the observation was actually modified, the original state_hash no
+    // longer matches its content — strip it so the recipient does not get a
+    // false replay_fidelity failure. A tool_call edit cannot invalidate the
+    // state_hash, which is derived from the observation alone.
+    if (out.observation !== undefined) {
+      const next = walk(out.observation, profile);
+      if (JSON.stringify(next) !== JSON.stringify(out.observation)) {
+        const { state_hash: _s, ...rest } = out;
+        void _s;
+        out = { ...rest, observation: next };
+      }
+    }
+
+    return out;
   });
+}
+
+/**
+ * Redact the manifest's free text.
+ *
+ * `name`, `description` and `slug` are author-supplied prose. In the teach
+ * flow the author typed them; in the ingest flow they are derived from the
+ * user's own prompt — which is exactly where a pasted key lands. A profile
+ * that cleans the trace and leaves the manifest is not a redaction profile,
+ * it is a partial one, so this runs for every non-`none` profile.
+ *
+ * The slug is re-derived after redaction because `[REDACTED_API_KEY]` does
+ * not satisfy the schema's `^[a-z0-9][a-z0-9-]*[a-z0-9]$` pattern — and a
+ * lowercase-hyphenated secret survives slugification unscathed, so the slug
+ * is a real leak path and not a theoretical one.
+ */
+function redactManifest(
+  manifest: SkillBundle['manifest'],
+  profile: RedactionProfile
+): SkillBundle['manifest'] {
+  if (profile === 'none') return manifest;
+
+  const name = redactString(manifest.name);
+  const description = redactString(manifest.description);
+  const slug = reslug(redactString(manifest.slug), manifest.slug);
+
+  if (name === manifest.name && description === manifest.description && slug === manifest.slug) {
+    return manifest;
+  }
+  return { ...manifest, name, description, slug };
+}
+
+function reslug(text: string, fallback: string): string {
+  const s = text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return s.length >= 2 ? s : fallback;
 }
 
 export function applyProfile(bundle: SkillBundle, profile: RedactionProfile): SkillBundle {
@@ -103,6 +175,7 @@ export function applyProfile(bundle: SkillBundle, profile: RedactionProfile): Sk
 
   return {
     ...bundle,
+    manifest: redactManifest(bundle.manifest, profile),
     interaction_trace: { ...bundle.interaction_trace, edges: redactedEdges },
     evidence: redactedEvidence
   };
@@ -112,6 +185,7 @@ export function isIdempotent(bundle: SkillBundle, profile: RedactionProfile): bo
   const once = applyProfile(bundle, profile);
   const twice = applyProfile(once, profile);
   return (
+    JSON.stringify(once.manifest) === JSON.stringify(twice.manifest) &&
     JSON.stringify(once.interaction_trace) === JSON.stringify(twice.interaction_trace) &&
     JSON.stringify(once.evidence) === JSON.stringify(twice.evidence)
   );

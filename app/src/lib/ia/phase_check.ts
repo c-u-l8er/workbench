@@ -13,7 +13,7 @@
 
 import { chain } from './chain';
 import { newValue } from './value';
-import type { Phase } from './phase';
+import { phaseIndex, phaseLeq, type Phase } from './phase';
 import type { TraceEdge, TraceEdgeKind, InteractionTrace } from '../trace';
 
 /**
@@ -64,9 +64,28 @@ export interface PhaseCheckResult {
 }
 
 /**
- * Splits a trace into cycles at every `user_message` boundary and runs
- * `chain` across consecutive edges within each cycle. Returns every backward
- * phase transition observed.
+ * Splits a trace into cycles and runs `chain` across consecutive edges within
+ * each cycle. Returns every backward phase transition observed.
+ *
+ * Two kinds of boundary, and the second one matters:
+ *
+ *  1. A `user_message` — a new instruction restarts the loop.
+ *  2. **Feedback followed by a step that is not after it.** An `observe` edge
+ *     is `learn`: the loop closed because a result came back. The next
+ *     `act` is the next turn of the loop, not a step backwards inside this
+ *     one.
+ *
+ * Without (2) this checker was unusable on any real agent trace. A Claude Code
+ * turn is `act, observe, act, observe, …`, so every second transition read as
+ * a `learn → act` violation — 124 of them on a 124-tool-call segment, and
+ * every violation on every segment was that same transition. A check that
+ * fires uniformly on correct input is measuring its own segmentation, not the
+ * trace. See `workbench/docs/INGEST_SPIKE.md` §4.
+ *
+ * The narrowness is the point: only a phase at or past `learn` opens a new
+ * cycle. `act → route` — authorizing something after already doing it — has
+ * no feedback edge in front of it, stays inside the cycle, and is still
+ * reported. That is the class of defect this check exists to catch.
  */
 export function checkPhaseOrder(trace: InteractionTrace): PhaseCheckResult {
   const edges = trace.edges;
@@ -74,15 +93,26 @@ export function checkPhaseOrder(trace: InteractionTrace): PhaseCheckResult {
     return { cycles: 0, edges_examined: 0, violations: [], ok: true };
   }
 
-  // Segment by user_message boundaries. The first edge always starts a cycle.
   const cycles: TraceEdge[][] = [];
   let current: TraceEdge[] = [];
+  let prevPhase: Phase | null = null;
+
   for (const e of edges) {
-    if (e.kind === 'user_message' && current.length > 0) {
+    const phase = edgeToPhase(e.kind);
+    const restart = e.kind === 'user_message';
+    // The loop came back around: feedback arrived, and the next step is not
+    // after it. `phaseLeq` is the same ordering `chain` refuses on.
+    const reentry =
+      prevPhase !== null &&
+      phaseIndex(prevPhase) >= phaseIndex('learn') &&
+      !phaseLeq(prevPhase, phase);
+
+    if ((restart || reentry) && current.length > 0) {
       cycles.push(current);
       current = [];
     }
     current.push(e);
+    prevPhase = phase;
   }
   if (current.length > 0) cycles.push(current);
 

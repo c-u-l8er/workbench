@@ -38,16 +38,25 @@ export function newTrace(): InteractionTrace {
   return { trace_id: uuid(), started_at: new Date().toISOString(), edges: [] };
 }
 
+/**
+ * The canonical state_hash of an observation payload.
+ *
+ * gate.replay_fidelity re-derives this from the recorded observation, so any
+ * producer of TraceEdges — the teach flow here, the transcript ingester in
+ * `lib/ingest/` — must compute it exactly this way or the gate fails for a
+ * reason that has nothing to do with the trace. Hence one implementation.
+ */
+export async function stateHash(observation: unknown): Promise<string> {
+  return 'sha256:' + (await sha256Hex(canonicalize(observation)));
+}
+
 export async function appendEdge(
   trace: InteractionTrace,
   edge: Omit<TraceEdge, 'index' | 'ts' | 'state_hash'> & { observation?: unknown }
 ): Promise<TraceEdge> {
   const index = trace.edges.length;
   const ts = new Date().toISOString();
-  const state_hash =
-    edge.observation !== undefined
-      ? 'sha256:' + (await sha256Hex(canonicalize(edge.observation as unknown)))
-      : undefined;
+  const state_hash = edge.observation !== undefined ? await stateHash(edge.observation) : undefined;
   const full: TraceEdge = { index, ts, state_hash, ...edge };
   trace.edges.push(full);
   return full;

@@ -59,19 +59,47 @@ describe('checkPhaseOrder', () => {
     expect(r.cycles).toBe(2);
   });
 
-  it('detects backward phase: observe (learn) → assistant_message (act) within one cycle', () => {
+  // Changed 2026-08-11. This used to assert that observe → assistant_message
+  // was a violation. Measured against real Claude Code transcripts, that made
+  // every second transition in every tool loop a violation — 124 of them on a
+  // 124-tool-call segment, all identical. Feedback arriving and the loop going
+  // round again is the loop working. See workbench/docs/INGEST_SPIKE.md §4.
+  it('feedback followed by another act opens a new cycle, not a violation', () => {
     const t = traceOf(['user_message', 'observe', 'assistant_message']);
+    const r = checkPhaseOrder(t);
+    expect(r.ok).toBe(true);
+    expect(r.violations).toHaveLength(0);
+    expect(r.cycles).toBe(2);
+  });
+
+  it('an act/observe tool loop is N cycles and zero violations', () => {
+    const t = traceOf([
+      'user_message',
+      'act', 'observe',
+      'act', 'observe',
+      'act', 'observe'
+    ]);
+    const r = checkPhaseOrder(t);
+    expect(r.ok).toBe(true);
+    expect(r.violations).toHaveLength(0);
+    expect(r.cycles).toBe(3);
+  });
+
+  // The teeth. Only a phase at or past `learn` opens a new cycle, so a
+  // backward step with no feedback edge in front of it is still caught.
+  it('still catches authorize-after-act, which has no feedback edge before it', () => {
+    const t = traceOf(['user_message', 'act', 'authorize']);
     const r = checkPhaseOrder(t);
     expect(r.ok).toBe(false);
     expect(r.violations).toHaveLength(1);
-    expect(r.violations[0].from_phase).toBe('learn');
-    expect(r.violations[0].to_phase).toBe('act');
+    expect(r.violations[0].from_phase).toBe('act');
+    expect(r.violations[0].to_phase).toBe('route');
   });
 
   it('cycle index is correctly attributed to the second cycle', () => {
     const t = traceOf([
       'user_message', 'assistant_message',
-      'user_message', 'observe', 'assistant_message'
+      'user_message', 'act', 'authorize'
     ]);
     const r = checkPhaseOrder(t);
     expect(r.ok).toBe(false);
