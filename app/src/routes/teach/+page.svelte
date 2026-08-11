@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { v4 as uuid } from 'uuid';
-  import { getOpenRouterKey, putSkill, putBundle } from '$lib/storage';
+  import { getOpenRouterKey, setOpenRouterKey, putSkill, putBundle } from '$lib/storage';
   import { chat, type ChatMessage } from '$lib/openrouter';
   import { newTrace, appendEdge, type InteractionTrace } from '$lib/trace';
   import { buildBundle } from '$lib/bundle/builder';
@@ -21,6 +21,14 @@
   let messages: ChatMessage[] = [];
   let busy = false;
   let hasKey = false;
+  let keyInput = '';
+
+  function saveKey() {
+    if (!keyInput.trim()) return;
+    setOpenRouterKey(keyInput.trim());
+    hasKey = true;
+    keyInput = '';
+  }
   let crystallizing = false;
   let skillName = '';
   let skillSlug = '';
@@ -309,8 +317,23 @@
 </p>
 
 {#if !hasKey}
-  <div class="warn">
-    No OpenRouter key in this session. <a href="/">Set one on the landing page</a> before teaching.
+  <!-- The key lives on the page that needs it. Teach is the only flow that
+       calls a model; Record produces the same bundles without one. -->
+  <div class="warn keybox">
+    <p>
+      <strong>Teach calls a model, so it needs an OpenRouter key.</strong>
+      Keys live in <code>sessionStorage</code> only — flushed when this tab closes — and are sent
+      through a pass-through Worker at <code>/api/llm/openrouter</code> that never logs them
+      (spec §7.1, §7.5).
+    </p>
+    <form on:submit|preventDefault={saveKey} class="keyrow">
+      <input type="password" placeholder="sk-or-…" bind:value={keyInput} autocomplete="off" />
+      <button type="submit" disabled={!keyInput.trim()}>Save for this session</button>
+    </form>
+    <p class="alt">
+      No key? <a href="/record">Record a session you already ran</a> — same six gates, same
+      library, no model call.
+    </p>
   </div>
 {/if}
 
@@ -505,6 +528,10 @@
     border: 1px solid #bf616a; background: #2a1c1d; padding: 10px 14px;
     border-radius: 4px; margin: 12px 0;
   }
+  .keybox p { margin: 0 0 10px; font-size: 13px; color: #c0c5ce; }
+  .keyrow { display: flex; gap: 8px; align-items: center; }
+  .keyrow input { flex: 1; max-width: 420px; }
+  .keybox .alt { margin: 10px 0 0; color: #6b7280; }
   .fixture { margin: 16px 0; }
   .fixture label { display: block; }
   .fixture-info { margin-top: 8px; border: 1px solid #2e3440; border-radius: 6px; padding: 10px 12px; background: #11141a; font-size: 13px; }

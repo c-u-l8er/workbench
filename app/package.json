@@ -1,6 +1,6 @@
 {
   "name": "@workbench/app",
-  "version": "0.3.0-alpha",
+  "version": "0.4.0-alpha",
   "private": true,
   "type": "module",
   "description": "Workbench v0.1 - Crystallize agent behavior into replayable skills",
