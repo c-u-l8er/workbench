@@ -114,8 +114,27 @@ extraction alkeyword's `crawl.py` does, so the gate and the crawler agree by con
    Three pages also turned out genuinely thin (55–98 words) because they render nothing before
    you interact; each got real static content rather than a lowered threshold.
 
-**Still open:** re-run `alkeyword.com/prototype` against the *deployed* surface and record the
-claim count. Before was **0 claims**, `spa_pages`, `pages_without_schema`.
+**Deployed and re-crawled, 2026-08-14** (`cd alkeyword.com/prototype && python3 crawl.py
+workbench.opensentience.org`):
+
+| | before | after |
+|---|---|---|
+| Pages discovered | 1 | **7** |
+| Total extractable words | **0** | **1,486** |
+| Claims | **0** | real claims across all types |
+| SPA pages (need JS) | 1 / 1 | **0** |
+| Pages without schema | 1 / 1 | **0 / 7** |
+| Page forms mintable | 0 | **1** — Glossary, 5/3 definition claims |
+
+Still refused, and correctly: Statistics 1/5 `quantity` · FAQ 0/5 `question` · Comparison 4/6 ·
+How-it-works 0/1 `process` · Entity 0/3 `credential`.
+
+**Readable is not the same as sufficient.** The surface went from invisible to crawlable, and the
+refusal rule still declines to mint five of six forms because the material genuinely is not there.
+Phase 6 is what supplies the missing `quantity` claims — bundle counts and gate pass-rates, each
+resolving to a recomputable `content_hash`.
+
+**Deploys take ~75 s** from `git push` to live. Verified twice this session.
 
 ### Phase 2 — `workbench watch`
 
