@@ -8,9 +8,14 @@ const config = {
     adapter: adapter({
       pages: 'build',
       assets: 'build',
-      fallback: 'index.html',
+      // NOT 'index.html'. Every route is prerendered now, and naming the
+      // fallback index.html makes adapter-static overwrite the prerendered
+      // homepage with an empty shell — silently, with only a build-log notice.
+      // The fallback exists solely for /skills/<id>, whose ids come from the
+      // visitor's IndexedDB; static/_redirects routes those to it with a 200.
+      fallback: 'fallback.html',
       precompress: false,
-      strict: true
+      strict: false
     }),
     alias: {
       $lib: 'src/lib'

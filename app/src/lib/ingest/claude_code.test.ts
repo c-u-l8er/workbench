@@ -64,6 +64,19 @@ describe('capability mapping', () => {
     expect(CAPABILITY_PATTERN.test(cap)).toBe(true);
   });
 
+  it('maps the operator-facing and watching tools the corpus survey found', () => {
+    // These four surfaced as &host.unknown_* across 2,198 real segments
+    // (SendUserFile 91, AskUserQuestion 75, Monitor 18, SendMessage 11).
+    // None of them is ambient: three reach the operator, one watches over time.
+    expect(toolToCapability('SendUserFile')).toBe('&user.notify');
+    expect(toolToCapability('AskUserQuestion')).toBe('&user.prompt');
+    expect(toolToCapability('SendMessage')).toBe('&agent.message');
+    expect(toolToCapability('Monitor')).toBe('&host.watch');
+    for (const t of ['SendUserFile', 'AskUserQuestion', 'SendMessage', 'Monitor']) {
+      expect(toolToCapability(t)).not.toBe('ambient');
+    }
+  });
+
   it('never lets an unknown tool default to ambient', () => {
     const cap = toolToCapability('FrobnicateWidget');
     expect(cap).toBe('&host.unknown_frobnicatewidget');

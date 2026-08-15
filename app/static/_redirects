@@ -1,0 +1,4 @@
+# Skill ids come from the visitor's own IndexedDB, so /skills/<id> and its
+# /replay child have no build-time entry list and are client-rendered.
+# Everything else is prerendered to a real HTML file and served directly.
+/skills/*  /fallback.html  200

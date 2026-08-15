@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHead from '$lib/PageHead.svelte';
   import { onMount } from 'svelte';
   import { v4 as uuid } from 'uuid';
   import { getOpenRouterKey, setOpenRouterKey, putSkill, putBundle } from '$lib/storage';
@@ -310,6 +311,13 @@
     }
   }
 </script>
+
+<PageHead
+  title="Teach a skill from scratch"
+  description="Drive a fresh interaction and crystallize the trace into a SkillBundle. The one Workbench surface that calls a model, and so the one that asks for an OpenRouter key."
+  path="/teach"
+  type="WebPage"
+/>
 
 <h1>Teach</h1>
 <p class="muted">

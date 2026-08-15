@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHead from '$lib/PageHead.svelte';
   // Record — turn a Claude Code session you already ran into a scored SkillBundle.
   //
   // No model is called here and no key is needed. Everything is parsed, hashed
@@ -156,6 +157,13 @@
   $: unmapped = capabilities.filter((c) => c.startsWith('&host.unknown_'));
 </script>
 
+<PageHead
+  title="Record a session"
+  description="Drop a Claude Code session transcript and Workbench streams it, splits it at each turn you took, and turns every tool call and result into a scored, signed SkillBundle. No model call and no API key."
+  path="/record"
+  type="WebPage"
+/>
+
 <section class="hero">
   <h1>Record</h1>
   <p class="lede">
@@ -184,6 +192,53 @@
 
 {#if error}
   <p class="fail">{error}</p>
+{/if}
+
+{#if phase === 'idle'}
+  <!-- Static, so the page says something before anyone interacts — to a reader
+       who just landed and to a crawler, which sees only what renders at build. -->
+  <section class="panel">
+    <h2>What happens when you drop a file</h2>
+    <ol class="steps">
+      <li>
+        <strong>It streams.</strong> The file is read line by line, never loaded whole — the
+        largest session measured on one machine was 202 MB, and a 556-session corpus indexes in
+        about 13 seconds.
+      </li>
+      <li>
+        <strong>It splits at your turns.</strong> One thing you asked for, plus the tool loop that
+        followed it, is one candidate skill. A whole session is a day of unrelated work and would
+        make a bundle nobody could replay or reuse.
+      </li>
+      <li>
+        <strong>Every tool call becomes a trace edge</strong> carrying the capability it needed —
+        <code>&amp;host.shell</code>, <code>&amp;host.fs_write</code>, <code>&amp;mcp.&lt;server&gt;</code>.
+        A tool with no known mapping is recorded as <code>&amp;host.unknown_*</code> and never as
+        <code>ambient</code>: "we don't know what this needs" and "this needs nothing" are
+        different claims.
+      </li>
+      <li>
+        <strong>Six gates run</strong> — content hash, trace completeness, hidden capability,
+        authority, redaction, replay fidelity. Each verdict comes from an Invariant Arithmetic
+        <code>consume</code> call and reports the law that produced it.
+      </li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h2>What it leaves out, and what never leaves</h2>
+    <p class="small">
+      Thinking blocks and subagent turns are dropped and <strong>counted</strong> — reasoning is not
+      observable in the world and carries whatever you were working on. Unparsable lines are counted
+      too. A zero and a blank look identical in a table and mean opposite things.
+    </p>
+    <p class="small">
+      Nothing is uploaded. The transcript is parsed, hashed and verified in this tab. Before a
+      bundle is saved you pick a redaction profile, and <code>transcript_pii</code> walks tool
+      arguments as well as observations — a key in a shell command is the likeliest secret in a real
+      session, not one in a payload.
+    </p>
+  </section>
 {/if}
 
 {#if index && phase !== 'idle' && phase !== 'indexing'}
@@ -366,6 +421,9 @@
   .row label { color: #6b7280; font-size: 12px; white-space: nowrap; }
   .row select { width: auto; flex: 1; max-width: 380px; }
 
+  .steps { margin: 0; padding-left: 20px; color: #b0b5be; font-size: 13px; }
+  .steps li { margin-bottom: 8px; }
+  .steps strong { color: #eceff4; }
   .muted { color: #6b7280; }
   .small { font-size: 12px; }
   .ok { color: #a3be8c; }

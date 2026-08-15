@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHead from '$lib/PageHead.svelte';
   // PRISM connectivity + leaderboard view (v0.3.0-alpha).
   //
   // What this page does today:
@@ -59,6 +60,13 @@
     setTimeout(() => (copied = false), 1200);
   }
 </script>
+
+<PageHead
+  title="PRISM leaderboard"
+  description="Live continual-learning leaderboard from the PRISM benchmark engine, plus SkillBundle hand-off staging by content hash."
+  path="/prism"
+  type="WebPage"
+/>
 
 <h1>PRISM</h1>
 <p class="muted">

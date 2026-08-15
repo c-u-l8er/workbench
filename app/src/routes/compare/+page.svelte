@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHead from '$lib/PageHead.svelte';
   // Compare tab — implements spec §8.3 acceptance criterion #13 and the
   // skill.model_comparison fixture (§8.4):
   //   "Same skill, two OpenRouter models, side-by-side ProofResults.
@@ -169,6 +170,13 @@
   }
 </script>
 
+<PageHead
+  title="Compare two models on one skill"
+  description="Run the same skill against two models and compare traces, fidelity and proof-gate verdicts side by side."
+  path="/compare"
+  type="WebPage"
+/>
+
 <h1>Compare</h1>
 <p class="muted">
   Re-run a fixture scenario against two OpenRouter models and show both <code>ProofResult</code>s side-by-side.
@@ -176,9 +184,39 @@
   into a composite verdict (spec §8.4): you see both proofs and any disagreement.
 </p>
 
+<section class="explain">
+  <h2>Why two proofs and never one number</h2>
+  <p>
+    Averaging two models into a single score destroys the only interesting information: where they
+    disagreed. A composite verdict that reads <code>0.5</code> cannot be distinguished from two runs
+    that each half-worked, and those are different findings. Both <code>ProofResult</code>s are shown
+    whole.
+  </p>
+  <dl>
+    <dt>What differing traces tell you</dt>
+    <dd>
+      If two models reach the same outcome by different tool sequences, the skill is closer to
+      <code>portable</code>. If only one reaches it, the skill is bound to that model and the
+      manifest's <code>binding</code> should say so rather than claim otherwise.
+    </dd>
+    <dt>What differing gates tell you</dt>
+    <dd>
+      A gate that passes for one model and fails for the other localizes the divergence to a named
+      claim — an undeclared capability, a state hash that did not reproduce — instead of a
+      difference in overall vibe.
+    </dd>
+    <dt>What this page needs</dt>
+    <dd>
+      Two live model calls, so it is one of the two surfaces that asks for an OpenRouter key.
+      <a href="/record">Recording a session</a> you already ran needs no key at all.
+    </dd>
+  </dl>
+</section>
+
 {#if !hasKey}
   <div class="warn">
-    No OpenRouter key in this session. <a href="/">Set one on the landing page</a> before running a comparison.
+    No OpenRouter key in this session. <a href="/teach">Set one on the Teach page</a> before running a comparison,
+    or <a href="/record">record a session</a> you already ran — that needs no key.
   </div>
 {/if}
 
@@ -289,6 +327,13 @@
 {/if}
 
 <style>
+  .explain { border: 1px solid #2e3440; border-radius: 6px; padding: 16px; background: #11141a; margin: 16px 0; }
+  .explain h2 { margin: 0 0 8px; font-size: 15px; }
+  .explain p { color: #b0b5be; font-size: 13px; margin: 0 0 10px; }
+  .explain dl { margin: 0; }
+  .explain dt { color: #eceff4; font-weight: 500; margin-top: 10px; font-size: 13px; }
+  .explain dt:first-child { margin-top: 0; }
+  .explain dd { margin: 3px 0 0; color: #b0b5be; font-size: 13px; }
   .muted { color: #6b7280; }
   .warn { border: 1px solid #bf616a; background: #2a1c1d; padding: 10px 14px; border-radius: 4px; margin: 12px 0; }
   .config { display: flex; gap: 16px; margin: 16px 0; }

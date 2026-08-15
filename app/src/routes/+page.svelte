@@ -1,6 +1,14 @@
 <script lang="ts">
+  import PageHead from '$lib/PageHead.svelte';
   import { WORKBENCH_VERSION } from '$lib/version';
 </script>
+
+<PageHead
+  title="Prove what your agent already did"
+  description="Workbench turns a Claude Code session you already ran into a SkillBundle — a signed, replayable record scored against six proof gates. No account, no API key, nothing leaves your browser."
+  path="/"
+  type="SoftwareApplication"
+/>
 
 <section class="hero">
   <h1>You already did the work. Prove it.</h1>

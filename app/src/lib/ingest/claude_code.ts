@@ -105,6 +105,14 @@ export const TOOL_CAPABILITY_MAP: Record<string, Capability> = {
   WebSearch: '&net.http',
   Task: '&agent.spawn',
   Agent: '&agent.spawn',
+  // Reaches the operator: sends them a file, or blocks waiting on an answer.
+  // Not `ambient` — something left the machine, or a human was interrupted.
+  SendUserFile: '&user.notify',
+  AskUserQuestion: '&user.prompt',
+  SendMessage: '&agent.message',
+  // Watches a condition over time; schedules the session's own future.
+  Monitor: '&host.watch',
+  ScheduleWakeup: '&host.watch',
   // Bookkeeping that touches nothing outside the conversation.
   TodoWrite: 'ambient',
   ToolSearch: 'ambient',
