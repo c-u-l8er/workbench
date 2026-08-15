@@ -20,13 +20,42 @@ const MIN_WORDS = 100; // alkeyword's needs_headless threshold
 // /skills/<id> resolves. Excluded, and named here rather than silently skipped.
 const EXEMPT = new Set(['fallback.html']);
 
+// Mirrors alkeyword's crawl.py Extractor: text is counted only when it sits
+// inside a block-level element. An earlier version of this file stripped all
+// tags and counted everything, which over-counted — it scored /prism at 109
+// where crawl.py scored 78 and flagged the page. A gate that disagrees with the
+// crawler it claims to mirror is measuring a proxy, which is the failure mode
+// docs/ROADMAP.md section 5 is about. Keep this list in sync with crawl.py.
+const BLOCK_TAGS = new Set([
+  'p', 'li', 'td', 'th', 'dd', 'dt', 'blockquote', 'figcaption',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'section', 'article'
+]);
+
 function extractableWords(html) {
-  const stripped = html.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, ' ');
-  const text = stripped
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&[a-z]+;|&#\d+;/gi, ' ');
-  return text.split(/\s+/).filter(Boolean).length;
+  const clean = html
+    .replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ');
+
+  let depth = 0;
+  let words = 0;
+  const token = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(\/?)>|([^<]+)/g;
+
+  for (const m of clean.matchAll(token)) {
+    const [full, name, selfClose, text] = m;
+    if (text !== undefined) {
+      if (depth > 0) {
+        words += text
+          .replace(/&[a-z]+;|&#\d+;/gi, ' ')
+          .split(/\s+/)
+          .filter(Boolean).length;
+      }
+      continue;
+    }
+    if (!BLOCK_TAGS.has(name.toLowerCase()) || selfClose) continue;
+    if (full.startsWith('</')) depth = Math.max(0, depth - 1);
+    else depth++;
+  }
+  return words;
 }
 
 function tag(html, re) {

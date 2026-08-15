@@ -75,6 +75,36 @@
   This page proves the wire works and stages the EvidenceBundle hand-off.
 </p>
 
+<section class="explain">
+  <h2>What PRISM does with a bundle</h2>
+  <p>
+    A SkillBundle and a PRISM EvidenceBundle are the same JSON read by two audiences. To you it is
+    a reusable, replayable record of something that worked. To PRISM it is a scored observation:
+    one system, one scenario, one outcome, joined to every other run of that scenario.
+  </p>
+  <dl>
+    <dt>Why the same file serves both</dt>
+    <dd>
+      A benchmark fed by artifacts produced only for benchmarking measures the benchmark. A bundle
+      minted from work someone actually did carries the awkward cases that invented scenarios leave
+      out — the retries, the wrong turns, the tools nobody planned to call.
+    </dd>
+    <dt>The hand-off is by content hash</dt>
+    <dd>
+      A bundle is identified by <code>content_hash</code>, which seals the manifest, the trace and
+      the proof result together. Anyone can recompute it, so a scored run cannot quietly refer to a
+      different bundle than the one that was verified.
+    </dd>
+    <dt>The loop this closes</dt>
+    <dd>
+      Graphonomous emits an <code>OutcomeSignal</code> to PRISM's observe phase; PRISM emits a
+      <code>ReputationUpdate</code> from diagnose. Both tokens are declared in PULSE v0.1.1. What
+      does not exist yet is the edge back into Workbench — see <code>docs/ROADMAP.md</code> Phase 4.
+      When it lands it may rank retrieval and must never influence a gate verdict.
+    </dd>
+  </dl>
+</section>
+
 <section class="card">
   <h2>Leaderboard</h2>
   {#if leaderboardErr}
@@ -138,7 +168,8 @@
     own PRISM tooling.
   </p>
   {#if bundles.length === 0}
-    <p class="muted">No local bundles yet. Crystallize one on <a href="/teach">/teach</a>.</p>
+    <p class="muted">No local bundles yet. <a href="/record">Record a session</a> you already ran, or
+      <a href="/teach">teach</a> a new one.</p>
   {:else}
     <label>Select a bundle
       <select bind:value={selectedBundleId}>
@@ -160,6 +191,13 @@
 </section>
 
 <style>
+  .explain { border: 1px solid #2e3440; border-radius: 6px; padding: 16px; background: #11141a; margin: 16px 0; }
+  .explain h2 { margin: 0 0 8px; font-size: 15px; }
+  .explain p { color: #b0b5be; font-size: 13px; margin: 0 0 10px; }
+  .explain dl { margin: 0; }
+  .explain dt { color: #eceff4; font-weight: 500; margin-top: 10px; font-size: 13px; }
+  .explain dt:first-child { margin-top: 0; }
+  .explain dd { margin: 3px 0 0; color: #b0b5be; font-size: 13px; }
   .muted { color: #6b7280; }
   .fail { color: #bf616a; }
   .card { margin: 16px 0; border: 1px solid #2e3440; border-radius: 6px; padding: 14px; background: #11141a; }
