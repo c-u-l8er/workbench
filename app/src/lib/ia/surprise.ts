@@ -1,6 +1,6 @@
 // Surprise signal → Invariant Arithmetic law projection.
 //
-// OS-011 §5.4 names five surprise kinds. Each is the operational definition
+// GRASP §5.4 names five surprise kinds. Each is the operational definition
 // of a specific law refusing the replay step:
 //
 //   state_hash_mismatch  → L12/L14  (topological)

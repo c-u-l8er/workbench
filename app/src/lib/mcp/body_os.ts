@@ -1,5 +1,5 @@
 // Thin wrapper over the streamable-HTTP MCP client for body-os-mcp.
-// OS-011 host-substrate body — file/process scope, NOT used in v0.1 browser flows.
+// GRASP host-substrate body — file/process scope, NOT used in v0.1 browser flows.
 // Included for capability declaration completeness so SkillBundles that reference
 // &body.os can be authored, even if they never execute in-browser.
 

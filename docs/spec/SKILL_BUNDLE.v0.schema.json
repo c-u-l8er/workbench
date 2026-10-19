@@ -27,7 +27,7 @@
     "manifest":       { "$ref": "https://opensentience.org/spec/skill-manifest/v0.1" },
     "interaction_trace": {
       "type": "object",
-      "description": "OS-011 §4 InteractionTrace. Structural shape only here; OS-011 is authoritative.",
+      "description": "GRASP §4 InteractionTrace. Structural shape only here; GRASP is authoritative.",
       "required": ["trace_id", "edges"],
       "properties": {
         "trace_id": { "type": "string", "format": "uuid" },

@@ -1,5 +1,5 @@
 // Thin wrapper over the streamable-HTTP MCP client for body-browser-mcp.
-// OS-011 Embodiment Protocol body — perceive / affordances / encode_state /
+// GRASP body — perceive / affordances / encode_state /
 // act / dry_run / replay.
 //
 // Tool surface verified against https://body-browser-mcp.fly.dev/mcp on

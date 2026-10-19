@@ -1,7 +1,7 @@
 {
   "schema": "https://opensentience.org/spec/workbench-fixture-scenario/v0.1",
   "id": "skill.replay_fidelity",
-  "purpose": "Replay an exported bundle against the same input and prove structural fidelity. Exercises the OS-011 5.4 fail-fast path on a happy run (no mismatch).",
+  "purpose": "Replay an exported bundle against the same input and prove structural fidelity. Exercises the GRASP 5.4 fail-fast path on a happy run (no mismatch).",
   "body_choice": "simulator",
   "task_prompt": "Walk a deterministic 3-step task in the simulator: read tile A, write to tile B, read tile B back. Output should be the final value at tile B.",
   "inputs": [

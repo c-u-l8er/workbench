@@ -1,6 +1,6 @@
 // SkillBundle replay engine. v0.1 deterministic, in-browser.
 //
-// Port of OS-011 §5.4 fail-fast replay semantics (BodyBrowser.Replay.execute/3):
+// Port of GRASP §5.4 fail-fast replay semantics (BodyBrowser.Replay.execute/3):
 //   1. For each recorded edge, attempt the same tool call.
 //   2. Compare the observed state_hash to the recorded one.
 //   3. On mismatch, halt and record a SurpriseSignal of kind state_hash_mismatch.

@@ -158,8 +158,8 @@ Each step has a clear, falsifiable success criterion.
 2. Workbench:
    - Calls `delegatic.authorize` with the same scope template.
    - Re-emits PULSE phases against current substrate (NOT cached).
-   - Runs `body.replay/3` (OS-011 §5.4 fail-fast) per recorded edge.
-   - Emits `SurpriseSignal` when state hash diverges (per OS-011 §5.4).
+   - Runs `body.replay/3` (GRASP §5.4 fail-fast) per recorded edge.
+   - Emits `SurpriseSignal` when state hash diverges (per GRASP §5.4).
 3. Workbench presents a `ReplayReport` with fidelity score (`edges_committed / edges_attempted`), per-edge diff, and one of `{success, halted_at_edge_N, completed_with_surprises}`.
 4. PRISM `observe` judges the replay output against the original (optional, opt-in per replay).
 5. User can save replay as a new bundle.
@@ -177,7 +177,7 @@ Each step has a clear, falsifiable success criterion.
 | `OpenRouterKey` | sessionStorage only; never persisted to IndexedDB | proxied through `/api/llm/openrouter` to keep CORS clean |
 | `BodyChoice` | enum: `browser` / `host` / `simulator` | maps to one of three deployed Fly MCP servers |
 | `Task` | `{ id, description, body_choice, created_at }` | the user's seed goal |
-| `InteractionTrace` | OS-011 §4 (authoritative) | recorded during step 1 |
+| `InteractionTrace` | GRASP §4 (authoritative) | recorded during step 1 |
 | `SkillManifest` | §7.2 of this spec | created in step 2 |
 | `ReplayReport` | §7.3 of this spec | created in step 3 |
 | `SkillBundle` | §7.1 of this spec | export wrapper; one per skill version |
@@ -212,14 +212,14 @@ The Workbench is a thin consumer of already-deployed MCP servers. **No new MCP w
 | Store trace | `graphonomous-mcp` | `act` with `store_trace` | ✅ live |
 | Crystallize | FleetPrompt HTTP | `POST /skills/crystallize` (proposed; today this is internal Elixir) | ⚠️ requires a thin HTTP endpoint on `fleetprompt` |
 | Retrieve trace for replay | `graphonomous-mcp` | `retrieve` with `replay` | ✅ live |
-| Replay | local body adapter | (in-browser TypeScript port of OS-011 §5.4) | ❌ new |
+| Replay | local body adapter | (in-browser TypeScript port of GRASP §5.4) | ❌ new |
 | Judge | `prism-eval` | `observe` | ✅ live (Phoenix LiveView app exposes the same engine) |
 
 ### 4.1 Known integration gaps that v0.1 will surface
 
 1. **PULSE has no emit-token MCP tool** as of v0.1.1. v0.1 of the Workbench emits CloudEvents v1 envelopes **locally** (collected into the bundle) and treats `os-pulse-mcp` as schema reference only. A PULSE v0.1.2 `emit_token` tool (or accepting a vendor namespace per STACK_PLANNING §6.7) would let the Workbench publish tokens centrally; until then, the bundle IS the published record.
 2. **FleetPrompt's `Crystallizer` is not yet exposed over HTTP.** v0.1 of the Workbench either (a) calls a new minimal `POST /api/skills/crystallize` route added to the FleetPrompt Phoenix app, or (b) runs a pure-TypeScript port of the Crystallizer transform locally in the browser. **Decision (§16 open question):** start with (b) for v0.1 to keep deployment scope to one frontend; promote to (a) in v0.2 when bundle publication lands.
-3. **OS-011 `replay/3` has no JS reference impl.** v0.1 ports `BodyBrowser.Replay.execute/3` and `BodyOs.Replay.execute/3` (Elixir, STACK_COMPLETION §4 step 6) into TypeScript inside `workbench/app/src/lib/replay.ts`. The port is normatively required to preserve OS-011 §5.4 fail-fast behavior and SurpriseSignal emission.
+3. **GRASP `replay/3` has no JS reference impl.** v0.1 ports `BodyBrowser.Replay.execute/3` and `BodyOs.Replay.execute/3` (Elixir, STACK_COMPLETION §4 step 6) into TypeScript inside `workbench/app/src/lib/replay.ts`. The port is normatively required to preserve GRASP §5.4 fail-fast behavior and SurpriseSignal emission.
 
 ### 4.2 MCP transport
 
@@ -264,7 +264,7 @@ A SkillBundle is the canonical export format. One file per skill version.
   "created_at": "2026-05-25T12:34:56Z",
   "workbench_version": "0.1.0",
   "manifest": { /* §5.2 SkillManifest */ },
-  "interaction_trace": { /* OS-011 §4 InteractionTrace */ },
+  "interaction_trace": { /* GRASP §4 InteractionTrace */ },
   "proof": { /* §5.4 ProofResult — first-class, not implied by evidence */ },
   "evidence": { /* §6 EvidenceBundle inline */ },
   "content_hash": "sha256:...",
@@ -374,7 +374,7 @@ A bundle whose `proof.overall_verdict` is anything other than `pass` is still a 
 | `exact` | Deterministic re-execution; every `state_hash_after` matches the recorded trace byte-for-byte. | Tool-call-only skills (no LLM mid-trace), or skills with fixed-seed deterministic models. |
 | `structural` | Schema, required fields, edge count, action types, and trace shape all match; specific text content may differ. | The v0.1 default for LLM-driven skills. |
 | `semantic` | A PRISM judge (or meta-judge) confirms output equivalence at acceptable confidence. | When the user opts in to judging during replay. |
-| `failed` | Replay halted before completion, or one or more required invariants did not hold. | Fail-fast on state-hash mismatch (OS-011 §5.4). |
+| `failed` | Replay halted before completion, or one or more required invariants did not hold. | Fail-fast on state-hash mismatch (GRASP §5.4). |
 | `inconclusive` | Replay completed but the verifier could not assign one of the above (e.g., missing reproducibility metadata, PRISM unavailable for semantic judging). | Surfaced verbatim so users do not mistake it for `pass`. |
 
 Replay reports MUST declare exactly one level. The UI MUST visually distinguish `inconclusive` from `pass` and `failed`.
